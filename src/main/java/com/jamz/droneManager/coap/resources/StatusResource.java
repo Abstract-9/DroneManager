@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.connect.json.JsonSerializer;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.concurrent.Future;
 
 import static com.jamz.droneManager.streams.StreamsManager.Constants.*;
 
@@ -33,12 +35,10 @@ public class StatusResource extends CoapResource {
     private KafkaProducer<String, JsonNode> producer;
     private final ObjectMapper mapper = new ObjectMapper();
     private final JsonNodeFactory factory = new JsonNodeFactory(true);
-    private DroneServer droneServer;
 
-    public StatusResource(DroneServer droneServer) {
-        super("StatusResource");
+    public StatusResource(String name) {
+        super(name);
         getAttributes().setTitle("Status Resource");
-        this.droneServer = droneServer;
         // Create Kafka Producer
         final Serializer<JsonNode> jsonSerializer = new JsonSerializer();
 
@@ -69,7 +69,7 @@ public class StatusResource extends CoapResource {
         producer.send(new ProducerRecord<>(DRONE_STATUS_TOPIC, drone_id, payload.get("status")));
 
         // Determine messages from drone
-        if (payload.has("messages")) translateIncoming(drone_id, (ArrayNode) payload.get("messages"));
+        if (payload.has("messages")) translateIncoming(drone_id, payload);
 
         // Determine if messages need to go to the drone
         if (DroneManager.hasMessages(drone_id)) {
@@ -87,15 +87,19 @@ public class StatusResource extends CoapResource {
             } catch (IOException e) {
                 exchange.respond(CoAP.ResponseCode.INTERNAL_SERVER_ERROR);
             }
+        } else {
+            exchange.respond(CoAP.ResponseCode.VALID);
         }
     }
 
-    private void translateIncoming(String drone_id, ArrayNode messages) {
-        for (JsonNode message : messages) {
+    private void translateIncoming(String drone_id, JsonNode payload) {
+        for (JsonNode message : payload.get("messages")) {
             ProducerRecord<String, JsonNode> record = null;
             switch (DroneMessage.MessageType.fromEventString(message.get("eventType").textValue())) {
                 case BAY_ASSIGNMENT_REQUEST:
-                    record = new ProducerRecord<>(BAY_ASSIGNMENT_TOPIC, drone_id, message);
+                    ObjectNode result = message.deepCopy();
+                    result.set("geometry", payload.get("status").get("geometry"));
+                    record = new ProducerRecord<>(BAY_ASSIGNMENT_TOPIC, drone_id, result);
                     break;
                 case BAY_ACCESS_REQUEST:
                     record = new ProducerRecord<>(BAY_ACCESS_TOPIC, drone_id, message);

@@ -19,6 +19,7 @@ public class DroneManager {
     private static final JsonNodeFactory factory = new JsonNodeFactory(true);
 
     private static final HashMap<String, JsonNode> droneStatuses = new HashMap<>();
+    private static final HashMap<String, JsonNode> activeJobs = new HashMap<>();
     private static final HashMap<String, ArrayList<DroneMessage>> droneMessages = new HashMap<>();
 
     public static void main(final String[] args) {
@@ -30,9 +31,7 @@ public class DroneManager {
     }
 
     public static void putDroneData(String drone_id, JsonNode data) {
-        if (!droneStatuses.containsKey(drone_id)) {
-            droneStatuses.put(drone_id, data);
-        }
+        droneStatuses.put(drone_id, data);
     }
 
     public static boolean hasDrone(String drone_id) {
@@ -46,22 +45,34 @@ public class DroneManager {
         droneMessages.put(drone_id, messages);
     }
 
-    public static JsonNode generateBids(JsonNode bid) {
+    public static void handleBidClose(String jobID, JsonNode result) {
+        if (hasDrone(result.get("drone_id").textValue())) {
+            putDroneMessage(result.get("drone_id").textValue(),
+                    new DroneMessage(DroneMessage.MessageType.JOB_ASSIGNMENT, result));
+        } else {
+            activeJobs.remove(jobID);
+        }
+    }
+
+    public static JsonNode generateBids(String jobID, JsonNode auction) {
+        activeJobs.put(jobID, auction);
         ObjectNode bidEvent = new ObjectNode(factory);
         bidEvent.put("eventType", "BidsPlaced");
         ArrayNode bids = bidEvent.putArray("bids");
-        droneStatuses.forEach((String key, JsonNode value) ->
-            bids.add(new ObjectNode(factory).put(
-                    "ID", key
-            ).put(
-                    "value", value.get("battery").intValue()
-            ))
-        );
+        droneStatuses.forEach((String key, JsonNode value) -> {
+            if (value.get("status").textValue().equals("IDLE")) {
+                bids.add(new ObjectNode(factory).put(
+                        "ID", key
+                ).put(
+                        "value", value.get("battery").intValue()
+                ));
+            }
+        });
         return bids;
     }
 
     public static boolean hasMessages(String drone_id) {
-        return !droneMessages.get(drone_id).isEmpty();
+        return droneMessages.get(drone_id) != null && !droneMessages.get(drone_id).isEmpty();
     }
 
     public static DroneMessage[] getMessages(String drone_id) {

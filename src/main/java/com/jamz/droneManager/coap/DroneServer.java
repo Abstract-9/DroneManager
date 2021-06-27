@@ -8,6 +8,7 @@ import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class DroneServer extends CoapServer {
@@ -18,11 +19,11 @@ public class DroneServer extends CoapServer {
             .getInt(NetworkConfig.Keys.TCP_CONNECTION_IDLE_TIMEOUT);
 
     public DroneServer() {
+        super();
         // Bind to all interfaces
         CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-        builder.setInetSocketAddress(new InetSocketAddress("0.0.0.0", COAP_PORT));
-        builder.setNetworkConfig(NetworkConfig.getStandard());
+        builder.setInetSocketAddress(new InetSocketAddress("localhost", COAP_PORT));
         addEndpoint(builder.build());
-        add(new StatusResource(this));
+        add(new StatusResource("status"));
     }
 }
