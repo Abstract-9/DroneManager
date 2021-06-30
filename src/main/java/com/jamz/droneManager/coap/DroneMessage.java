@@ -16,7 +16,7 @@ public class DroneMessage {
         // Incoming Message Types (from kafka)
         BAY_ASSIGNMENT("BayAssignment"),
         BAY_ACCESS_GRANTED("AccessGranted"),
-        BAY_ACCESS_DENIED("AccessDenied"),
+        BAY_ACCESS_DENIED("AccessQueued"),
         PATH_ASSIGNMENT("PathAssignment"),
         JOB_ASSIGNMENT("JobAssignment"),
         JOB_AUCTION("AuctionOpen"),

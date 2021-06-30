@@ -22,7 +22,7 @@ public class DroneServer extends CoapServer {
         super();
         // Bind to all interfaces
         CoapEndpoint.Builder builder = new CoapEndpoint.Builder();
-        builder.setInetSocketAddress(new InetSocketAddress("localhost", COAP_PORT));
+        builder.setInetSocketAddress(new InetSocketAddress("0.0.0.0", COAP_PORT));
         addEndpoint(builder.build());
         add(new StatusResource("status"));
     }
