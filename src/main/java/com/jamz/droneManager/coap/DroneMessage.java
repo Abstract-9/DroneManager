@@ -25,8 +25,9 @@ public class DroneMessage {
         BAY_ACCESS_REQUEST("AccessRequest"),
         PLACE_BIDS("BidsPlaced"),
         PATH_PROPOSAL("PathProposal"),
+        BAY_CLEARED("AccessComplete"),
         // To make switches work with reversed eventStrings
-        NONE(null);
+        NONE("");
 
         public String eventString;
         MessageType(String eventString) {

@@ -76,8 +76,7 @@ public class StatusResource extends CoapResource {
             ObjectNode response = new ObjectNode(factory);
             ArrayNode messages = response.putArray("messages");
             for (DroneMessage message : DroneManager.getMessages(drone_id)) {
-                messages.add(new ObjectNode(factory).put(
-                        "eventType", message.messageType.eventString).set("payload", message.payload));
+                messages.add(message.payload);
             }
             try{
                 StringWriter writer = new StringWriter();
@@ -97,11 +96,10 @@ public class StatusResource extends CoapResource {
             ProducerRecord<String, JsonNode> record = null;
             switch (DroneMessage.MessageType.fromEventString(message.get("eventType").textValue())) {
                 case BAY_ASSIGNMENT_REQUEST:
-                    ObjectNode result = message.deepCopy();
-                    result.set("geometry", payload.get("status").get("geometry"));
-                    record = new ProducerRecord<>(BAY_ASSIGNMENT_TOPIC, drone_id, result);
+                    record = new ProducerRecord<>(BAY_ASSIGNMENT_TOPIC, drone_id, message);
                     break;
                 case BAY_ACCESS_REQUEST:
+                case BAY_CLEARED:
                     record = new ProducerRecord<>(BAY_ACCESS_TOPIC, drone_id, message);
                     break;
                 case PATH_PROPOSAL:

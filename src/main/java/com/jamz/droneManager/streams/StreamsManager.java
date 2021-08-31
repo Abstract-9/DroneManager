@@ -92,12 +92,12 @@ public class StreamsManager {
 
         // Build bidding stream
         streamBuilder.stream(JOB_BID_TOPIC, consumed).filter((String key, JsonNode value) ->
-            value.get("eventType").textValue().equals(JOB_AUCTION.eventString)
+            value.has("eventType") && value.get("eventType").textValue().equals(JOB_AUCTION.eventString)
         ).mapValues(DroneManager::generateBids).to(JOB_BID_TOPIC);
 
         // Build flight path stream
         streamBuilder.stream(FLIGHT_PATH_TOPIC, consumed).filter((String key, JsonNode value) ->
-                value.get("eventType").textValue().equals(PATH_ASSIGNMENT.eventString) && DroneManager.hasDrone(key)
+                value.has("eventType") && value.get("eventType").textValue().equals(PATH_ASSIGNMENT.eventString) && DroneManager.hasDrone(key)
         ).foreach((String key, JsonNode value) ->
             DroneManager.putDroneMessage(key, new DroneMessage(PATH_ASSIGNMENT, value))
         );

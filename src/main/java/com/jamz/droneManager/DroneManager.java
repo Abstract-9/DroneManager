@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jamz.droneManager.coap.DroneMessage;
 import com.jamz.droneManager.coap.DroneServer;
 import com.jamz.droneManager.streams.StreamsManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,8 +23,10 @@ public class DroneManager {
     private static final HashMap<String, JsonNode> droneStatuses = new HashMap<>();
     private static final HashMap<String, JsonNode> activeJobs = new HashMap<>();
     private static final HashMap<String, ArrayList<DroneMessage>> droneMessages = new HashMap<>();
+    private static Logger log;
 
     public static void main(final String[] args) {
+        log = LoggerFactory.getLogger(DroneManager.class);
         streamsManager = new StreamsManager();
         coapServer = new DroneServer();
 
@@ -47,28 +51,35 @@ public class DroneManager {
 
     public static void handleBidClose(String jobID, JsonNode result) {
         if (hasDrone(result.get("drone_id").textValue())) {
+            ObjectNode droneMessage = new ObjectNode(factory);
+            droneMessage.put("eventType", "JobAssignment")
+                    .set("job_waypoints", activeJobs.get(jobID).get("job_waypoints"));
             putDroneMessage(result.get("drone_id").textValue(),
-                    new DroneMessage(DroneMessage.MessageType.JOB_ASSIGNMENT, result));
+                    new DroneMessage(DroneMessage.MessageType.JOB_ASSIGNMENT, droneMessage));
         } else {
             activeJobs.remove(jobID);
         }
     }
 
     public static JsonNode generateBids(String jobID, JsonNode auction) {
+        log.info("Received a job auction: " + jobID + ". Available Drones: \n" + droneStatuses);
         activeJobs.put(jobID, auction);
         ObjectNode bidEvent = new ObjectNode(factory);
         bidEvent.put("eventType", "BidsPlaced");
         ArrayNode bids = bidEvent.putArray("bids");
         droneStatuses.forEach((String key, JsonNode value) -> {
-            if (value.get("status").textValue().equals("IDLE")) {
+            if (value.get("Flight_Controller_State").textValue().equals("STATE_IDLE")) {
+                int level;
+                if (value.get("Battery").get("level").isNull()) level = 100;
+                else level = value.get("Battery").get("level").intValue();
                 bids.add(new ObjectNode(factory).put(
                         "ID", key
                 ).put(
-                        "value", value.get("battery").intValue()
+                        "value", level
                 ));
             }
         });
-        return bids;
+        return bidEvent;
     }
 
     public static boolean hasMessages(String drone_id) {

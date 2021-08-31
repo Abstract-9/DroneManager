@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ReshiftSecurity-Intellij-Report">
+    <isGitProject>true</isGitProject>
+    <gitBranch>main</gitBranch>
+    <gitRepo>git@gitlab.com:jamz-fleet-manager/drone-manager.git</gitRepo>
+    <projectName>DroneManager</projectName>
+    <securityIssues />
+  </component>
+</project>
