@@ -50,14 +50,27 @@ public class DroneManager {
     }
 
     public static void handleBidClose(String jobID, JsonNode result) {
-        if (hasDrone(result.get("drone_id").textValue())) {
-            ObjectNode droneMessage = new ObjectNode(factory);
-            droneMessage.put("eventType", "JobAssignment")
-                    .set("job_waypoints", activeJobs.get(jobID).get("job_waypoints"));
+        if (hasDrone(result.get("drone_id").textValue())) { // Skip messages that aren't for the drones being managed
+            ObjectNode droneMessage = new ObjectNode(factory); // Create message template
+
+            // If this job is emitted normally, we'll have it in the active jobs map
+            if (activeJobs.containsKey(jobID)) {
+                droneMessage.put("eventType", "JobAssignment")
+                        .set("job_waypoints", activeJobs.get(jobID).get("job_waypoints"));
+            // if this job isn't emitted normally, it's for testing. Use the embedded waypoints.
+            } else if (result.has("job_waypoints")) {
+                droneMessage.put("eventType", "JobAssignment")
+                        .set("job_waypoints", result.get("job_waypoints"));
+            // If neither of those work, this job is malformed.
+            } else {
+                log.warn("Received malformed job request! Job ID " + jobID);
+                return;
+            }
+            // Tell the drone it's got a job.
             putDroneMessage(result.get("drone_id").textValue(),
                     new DroneMessage(DroneMessage.MessageType.JOB_ASSIGNMENT, droneMessage));
         } else {
-            activeJobs.remove(jobID);
+            activeJobs.remove(jobID); // If the job isn't assigned to one of the managed drones, remove it.
         }
     }
 
