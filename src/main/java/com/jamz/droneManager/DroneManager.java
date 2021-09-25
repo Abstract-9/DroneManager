@@ -84,9 +84,7 @@ public class DroneManager {
         ArrayNode bids = bidEvent.putArray("bids");
         droneStatuses.forEach((String key, JsonNode value) -> {
             if (value.get("Flight_Controller_State").textValue().equals("STATE_IDLE")) {
-                int level;
-                if (value.get("Battery").get("level").isNull()) level = 100;
-                else level = value.get("Battery").get("level").intValue();
+                int level = value.get("Battery").intValue();
                 bids.add(new ObjectNode(factory).put(
                         "ID", key
                 ).put(
