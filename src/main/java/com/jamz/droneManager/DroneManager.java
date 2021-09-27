@@ -52,7 +52,7 @@ public class DroneManager {
     public static void handleBidClose(String jobID, JsonNode result) {
         if (!result.get("eventType").textValue().equals("JobAssignment")) return; // Skip messages that are assignment approval requests
 
-        if (!hasDrone(result.get("drone_id").textValue())) { // Skip messages that aren't for the drones being managed
+        if (hasDrone(result.get("drone_id").textValue())) { // Skip messages that aren't for the drones being managed
             ObjectNode droneMessage = new ObjectNode(factory); // Create message template
 
             // If this job is emitted normally, we'll have it in the active jobs map
